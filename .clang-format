@@ -1,0 +1,57 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: false
+    AfterCaseLabel: false
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterFunction: false
+    AfterNamespace: false
+    AfterObjCDeclaration: false
+    AfterStruct: false
+    AfterUnion: false
+    BeforeCatch: false
+    BeforeElse: false
+    IndentBraces: false
+ColumnLimit: 80
+ContinuationIndentWidth: 8
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AlignArrayOfStructures: Left
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: true
+BreakBeforeBinaryOperators: None
+AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000
+PenaltyBreakAssignment: 1000
+BreakConstructorInitializers: AfterColon
+PointerAlignment: Left
+DerivePointerAlignment: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+SpaceBeforeCpp11BracedList: true
+SpaceInEmptyBlock: false
+SpacesInParentheses: false
+SpacesInContainerLiterals: true
+SpacesBeforeTrailingComments: 1
+IndentPPDirectives: BeforeHash
+SortIncludes: true
+IncludeBlocks: Preserve
+EmptyLineBeforeAccessModifier: LogicalBlock
+FixNamespaceComments: true
+IndentCaseLabels: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+Cpp11BracedListStyle: false
+UseTab: Never
+TabWidth: 4
+InsertNewlineAtEOF: true
