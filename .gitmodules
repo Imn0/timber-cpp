@@ -1,3 +1,4 @@
 [submodule "timber-c"]
 	path = timber-c
 	url = git@github.com:Imn0/timber.git
+    branch = master

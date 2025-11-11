@@ -5,7 +5,9 @@
 #include <format>
 #include <source_location>
 #include <string_view>
+
 namespace tmb {
+
 namespace c {
 extern "C" {
 #include <tmb/tmb.h>
@@ -85,27 +87,120 @@ inline void log_default_logger_impl(LogLevel level,
 template <typename... Args>
 inline void log_default_logger(LogLevel level,
                                const std::source_location& loc,
-                               std::format_string<Args...> fmt,
+                               std::string_view fmt,
                                Args&&... args) {
-    auto msg = std::format(fmt, std::forward<Args>(args)...);
+    std::string msg;
+    try {
+        msg = std::vformat(fmt, std::make_format_args(args...));
+    } catch (const std::format_error& e) {
+        msg   = std::string("[format error] ") + e.what();
+        level = LogLevel::Error;
+    }
     log_default_logger_impl(level, loc, msg);
 }
+
+struct format_with_location {
+    std::string_view value;
+    std::source_location loc;
+
+    template <typename String>
+    format_with_location(const String& s,
+                         const std::source_location& location =
+                                 std::source_location::current()) :
+        value { s }, loc { location } {}
+};
+
 } // namespace internal
 
-#define _tmb_ccp_LOG_LEVEL__(_m_name, _m_level)                                \
-    template <typename... Args> struct _m_name {                               \
-        _m_name(std::format_string<Args...> fmt,                               \
-                Args&&... args,                                                \
-                const std::source_location& loc =                              \
-                        std::source_location::current()) {                     \
-            internal::log_default_logger(                                      \
-                    _m_level, loc, fmt, std::forward<Args>(args)...);          \
-        }                                                                      \
-    };                                                                         \
-                                                                               \
-    template <typename... Args>                                                \
-    _m_name(std::format_string<Args...>, Args&&...)->_m_name<Args...>
+class Logger {
+  public:
+    Logger(std::string_view name,
+           const c::tmb_cfg_t& cfg = {
+                   .max_log_level = c::LOG_LEVEL_DEBUG,
+                   .enable_colors = true,
+           }) {
+        _logger = c::tmb_logger_create(name.data(), cfg);
+        if (!_logger) { throw std::runtime_error("Failed to create logger"); }
+        _name = std::string(name);
+    }
 
+    ~Logger() {
+        if (_logger) {
+            c::tmb_logger_destroy(_logger);
+            _logger = nullptr;
+        }
+    }
+
+    Logger(const Logger&)            = delete;
+    Logger& operator=(const Logger&) = delete;
+    Logger(Logger&& other) noexcept :
+        _logger(other._logger), _name(std::move(other._name)) {
+        other._logger = nullptr;
+    }
+
+    Logger& operator=(Logger&& other) noexcept {
+        if (this != &other) {
+            if (_logger) c::tmb_logger_destroy(_logger);
+            _logger       = other._logger;
+            _name         = std::move(other._name);
+            other._logger = nullptr;
+        }
+        return *this;
+    }
+
+    template <typename... Args>
+    void log(LogLevel level,
+             const std::source_location& loc,
+             std::string_view fmt,
+             Args&&... args) {
+        std::string msg;
+        try {
+            msg = std::vformat(fmt, std::make_format_args(args...));
+        } catch (const std::format_error& e) {
+            msg   = std::string("[format error] ") + e.what();
+            level = LogLevel::Error;
+        }
+        log_impl(level, loc, msg);
+    }
+
+#define _tmb_ccp_LOG_LEVEL__(_m_name, _m_level)                                \
+    template <typename... Args>                                                \
+    void _m_name(internal::format_with_location fmt, Args&&... args) {         \
+        log(_m_level, fmt.loc, fmt.value, std::forward<Args>(args)...);        \
+    }
+
+    _tmb_ccp_LOG_LEVEL__(fatal, LogLevel::Fatal);
+    _tmb_ccp_LOG_LEVEL__(error, LogLevel::Error);
+    _tmb_ccp_LOG_LEVEL__(warning, LogLevel::Warning);
+    _tmb_ccp_LOG_LEVEL__(warn, LogLevel::Warning);
+    _tmb_ccp_LOG_LEVEL__(info, LogLevel::Info);
+    _tmb_ccp_LOG_LEVEL__(debug, LogLevel::Debug);
+    _tmb_ccp_LOG_LEVEL__(trace, LogLevel::Trace);
+#undef _tmb_ccp_LOG_LEVEL__
+
+  private:
+    void log_impl(LogLevel level,
+                  const std::source_location& loc,
+                  std::string_view msg) {
+        c::tmb_log(internal::LogContext(level, loc).to_c(),
+                   _logger,
+                   "%.*s",
+                   static_cast<int>(msg.size()),
+                   msg.data());
+    }
+    c::tmb_logger_t* _logger { nullptr };
+    std::string _name;
+};
+
+// https://github.com/gabime/spdlog/issues/1959
+#define _tmb_ccp_LOG_LEVEL__(_m_name, _m_level)                                \
+    template <typename... Args>                                                \
+    void _m_name(internal::format_with_location fmt, Args&&... args) {         \
+        internal::log_default_logger(                                          \
+                _m_level, fmt.loc, fmt.value, std::forward<Args>(args)...);    \
+    }                                                                          \
+    template <typename... Args>                                                \
+    void _m_name(internal::format_with_location fmt, Args&&... args)
 _tmb_ccp_LOG_LEVEL__(fatal, LogLevel::Fatal);
 _tmb_ccp_LOG_LEVEL__(error, LogLevel::Error);
 _tmb_ccp_LOG_LEVEL__(warning, LogLevel::Warning);
@@ -114,6 +209,7 @@ _tmb_ccp_LOG_LEVEL__(info, LogLevel::Info);
 _tmb_ccp_LOG_LEVEL__(debug, LogLevel::Debug);
 _tmb_ccp_LOG_LEVEL__(trace, LogLevel::Trace);
 
+#undef _tmb_ccp_LOG_LEVEL__
 } // namespace tmb
 
 #endif // TMB_CPP_HPP_

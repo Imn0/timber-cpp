@@ -12,6 +12,18 @@ option(BUILD_CPP_EXAMPLES "Build examples" ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(BUILD_EXAMPLES OFF CACHE BOOL "Disable timber-c examples" FORCE)
+
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/timber-c/.git")
+    message(STATUS "Initializing timber-c submodule...")
+    execute_process(
+        COMMAND git submodule update --init --recursive timber-c
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GIT_SUBMODULE_RESULT
+    )
+    if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to initialize timber-c submodule")
+    endif()
+endif()
 add_subdirectory(timber-c)
 
 add_library(timber-cpp INTERFACE)

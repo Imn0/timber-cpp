@@ -1,6 +1,8 @@
 #include <tmb/tmb.hpp>
 
 int main(void) {
-    tmb::info("test message {}", 5);
-    tmb::error("wdadwdawd {}", 3.3);
+    tmb::info("aa {}", 3);
+
+    auto lgr = tmb::Logger("eeee");
+    lgr.info("woho {} {}", 3);
 }
