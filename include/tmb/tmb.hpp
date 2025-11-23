@@ -6,9 +6,12 @@
 #include <source_location>
 #include <string_view>
 
+#include <atomic> // very very important to include it BEFORE tmb.h :)
+
 namespace tmb {
 
 namespace c {
+typedef std::atomic<int> IAmActuallyUsingTheAtomicHeader;
 extern "C" {
 #include <tmb/tmb.h>
 }
@@ -115,8 +118,8 @@ struct format_with_location {
 class Logger {
   public:
     Logger(std::string_view name,
-           const c::tmb_cfg_t& cfg = {
-                   .max_log_level = c::LOG_LEVEL_DEBUG,
+           const c::tmb_logger_cfg_t& cfg = {
+                   .log_level     = c::TMB_LOG_LEVEL_DEBUG,
                    .enable_colors = true,
            }) {
         _logger = c::tmb_logger_create(name.data(), cfg);
@@ -198,9 +201,8 @@ class Logger {
     void _m_name(internal::format_with_location fmt, Args&&... args) {         \
         internal::log_default_logger(                                          \
                 _m_level, fmt.loc, fmt.value, std::forward<Args>(args)...);    \
-    }                                                                          \
-    template <typename... Args>                                                \
-    void _m_name(internal::format_with_location fmt, Args&&... args)
+    }
+
 _tmb_ccp_LOG_LEVEL__(fatal, LogLevel::Fatal);
 _tmb_ccp_LOG_LEVEL__(error, LogLevel::Error);
 _tmb_ccp_LOG_LEVEL__(warning, LogLevel::Warning);
