@@ -181,6 +181,10 @@ class Logger {
     _tmb_ccp_LOG_LEVEL__(trace, LogLevel::Trace);
 #undef _tmb_ccp_LOG_LEVEL__
 
+    bool set_default_format(const char* fmt) {
+        return c::tmb_logger_set_default_format(this->_logger, fmt);
+    }
+
   private:
     void log_impl(LogLevel level,
                   const std::source_location& loc,
@@ -210,6 +214,10 @@ _tmb_ccp_LOG_LEVEL__(warn, LogLevel::Warning);
 _tmb_ccp_LOG_LEVEL__(info, LogLevel::Info);
 _tmb_ccp_LOG_LEVEL__(debug, LogLevel::Debug);
 _tmb_ccp_LOG_LEVEL__(trace, LogLevel::Trace);
+
+inline bool set_default_format(const char* fmt) {
+    return c::tmb_logger_set_default_format(c::tmb_get_default_logger(), fmt);
+}
 
 #undef _tmb_ccp_LOG_LEVEL__
 } // namespace tmb
