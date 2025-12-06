@@ -4,6 +4,7 @@ project(timber-cpp VERSION 1.0
     DESCRIPTION "C++ wrapper for the timber C logging library"
     LANGUAGES C CXX)
 
+include(GNUInstallDirs)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -11,21 +12,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(BUILD_CPP_EXAMPLES "Build examples" ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(BUILD_EXAMPLES OFF CACHE BOOL "Disable timber-c examples" FORCE)
+find_package(timber QUIET)
 
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/timber-c/.git")
-    message(STATUS "Initializing timber-c submodule...")
-    execute_process(
-        COMMAND git submodule update --init --recursive timber-c
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        RESULT_VARIABLE GIT_SUBMODULE_RESULT
-    )
-    if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to initialize timber-c submodule")
+if(timber_FOUND)
+    message(STATUS "Found existing timber library")
+    set(TIMBER_FROM_SYSTEM TRUE)
+else()
+    message(STATUS "timber library not found, using submodule")
+    set(TIMBER_FROM_SYSTEM FALSE)
+
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/timber-c/.git")
+        message(STATUS "Initializing timber-c submodule...")
+        execute_process(
+            COMMAND git submodule update --init --recursive timber-c
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMODULE_RESULT
+        )
+        if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to initialize timber-c submodule")
+        endif()
     endif()
-endif()
-add_subdirectory(timber-c)
 
+    set(BUILD_EXAMPLES OFF CACHE BOOL "Disable timber-c examples" FORCE)
+    add_subdirectory(timber-c)
+endif()
+
+# Create the interface library
 add_library(timber-cpp INTERFACE)
 add_library(timber-cpp::timber-cpp ALIAS timber-cpp)
 
@@ -34,9 +46,9 @@ target_include_directories(timber-cpp INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(timber-cpp INTERFACE timber::timber)
+target_link_libraries(timber-cpp INTERFACE timber)
 
-install(DIRECTORY include/
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.hpp"
 )
@@ -72,4 +84,6 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/timber-cpp
 )
 
-add_subdirectory(examples)
+if(BUILD_CPP_EXAMPLES)
+    add_subdirectory(examples)
+endif()

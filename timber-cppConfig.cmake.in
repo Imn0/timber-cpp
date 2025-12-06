@@ -1,3 +1,8 @@
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+find_dependency(timber REQUIRED)
+
 include("${CMAKE_CURRENT_LIST_DIR}/timber-cppTargets.cmake")
+
+check_required_components(timber-cpp)
